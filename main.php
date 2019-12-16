@@ -12,6 +12,7 @@ $broker = new Broker();
 $replay = new Replay($broker);
 $cliClient = new CliClient($broker);
 $player = new Player($broker);
+$player->setName('Your Fighter');
 $cliClient->setPlayer($player);
 
 // main game loop

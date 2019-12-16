@@ -1,4 +1,7 @@
 <?php
+/*
+	AI version of a fighter in the game. Always rolls, cleans itself up after a game ends.
+*/
 
 use PubSub\Message;
 

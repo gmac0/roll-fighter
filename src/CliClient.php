@@ -1,4 +1,7 @@
 <?php
+/*
+	Handles command line UI for interacting with the game
+*/
 
 use PubSub\Subscriber;
 use PubSub\Broker;
@@ -43,7 +46,7 @@ class CliClient implements Subscriber{
 				$this->updateUser($message->data);
 				break;
 			case 'game.complete':
-				$this->outputWinner();
+				$this->outputWinner($message->data['winner']);
 				break;
 			case 'game.awaitPlayerAction':
 				$this->awaitPlayerAction($message->data['player']);
@@ -56,10 +59,19 @@ class CliClient implements Subscriber{
 	}
 
 	public function awaitPlayerAction($player = null) {
+		// Make sure we're actioning on the correct player message from the broker
 		if ($player !== null && $player !== $this->player) {
 			$this->log('wrong player, returning', 'debug');
 			return;
 		}
+		// If the player has elected to auto-roll the rest of the game, continue until it's over
+		if ($player !== null
+			&& $player->isInGame()
+			&& $player->getOption() === Player::OPTIONS['auto-roll']
+		) {
+			return;
+		}
+		// Prompt player for a choice and set their option
 		$prompt = "Choose an option:" . PHP_EOL;
 		foreach ($this->player->getAvailableOptions() as $name => $hotkey) {
 			$prompt .= "$hotkey) $name" . PHP_EOL;
@@ -67,7 +79,7 @@ class CliClient implements Subscriber{
 		do {
 			echo $prompt;
 			$input = readline();
-		} while (!in_array($input, $this->player::OPTIONS));
+		} while (!in_array($input, $this->player->getAvailableOptions()));
 		$this->player->setOption($input);
 	}
 
@@ -87,19 +99,13 @@ class CliClient implements Subscriber{
 		echo PHP_EOL;
 	}
 
-	public function outputWinner() {
-		if ($this->player->getHealthPoints() <= 0) {
-				echo implode(PHP_EOL, [
-					"=================================",
-					"==          You Lost :(        ==",
-					"=================================",
-				]) . PHP_EOL;
-		} else {
-							echo implode(PHP_EOL, [
-					"=================================",
-					"==          You Won !!!        ==",
-					"=================================",
-				]) . PHP_EOL;
-		}
+	public function outputWinner(Player $winner) {
+			$name = str_pad($winner->getName() . " Won!", 29, ' ', STR_PAD_BOTH);
+			echo implode(PHP_EOL, [
+				"=================================",
+				"==$name==",
+				"=================================",
+			]) . PHP_EOL;
+		
 	}
 }

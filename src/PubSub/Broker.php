@@ -1,4 +1,10 @@
 <?php
+/*
+	Holds a list of subscribers by message name.
+	Publishes messages by filtering on subscribers and invoking the receiveMessage function
+	on appropriate subscribers.
+*/
+
 namespace PubSub;
 
 class Broker {

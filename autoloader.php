@@ -1,4 +1,7 @@
 <?php
+/*
+	Loads classes on the fly. Includes support for namespaces.
+*/
 
 spl_autoload_register(function($class) {
 	// handle namspaced classes

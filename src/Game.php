@@ -1,4 +1,7 @@
 <?php
+/*
+	Tracks players, hold global game state, and performs rolls
+*/
 
 use PubSub\Subscriber;
 use PubSub\Message;
@@ -20,7 +23,7 @@ class Game implements Subscriber {
 				self::PLAYER_1 => null,
 				self::PLAYER_2 => null,
 			],
-			'isOver' => false,		// indicates a player has lost
+			'hasWinner' => false,	// indicates a player has lost
 			'isComplete' => false,	// indicates all end of game cleanup is complete
 		];
 		$this->dice = new Dice();
@@ -32,7 +35,7 @@ class Game implements Subscriber {
 		$this->log("Message: " . json_encode($message), 'info');
 		switch ($message->name) {
 			case 'player.outOfHealth':
-				$this->state['isOver'] = true;
+				$this->state['hasWinner'] = true;
 				break;
 		}
 	}
@@ -52,6 +55,7 @@ class Game implements Subscriber {
 		foreach ($this->state['players'] as &$player) {
 			if ($player === null) {
 				$player = new AI($this->broker);
+				$player->setName('AI Fighter');
 			}
 		}
 	}
@@ -91,9 +95,14 @@ class Game implements Subscriber {
 		}
 
 		$this->broker->publish(new Message('game.roundOver', $this->getFightSummary()));
-		if ($this->state['isOver']) {
+		if ($this->state['hasWinner']) {
 			$this->broker->publish(new Message('game.over'));
-			$this->broker->publish(new Message('game.complete'));
+			if ($player1->getHealthPoints() < $player2->getHealthPoints()) {
+				$winner = $player2;
+			} else {
+				$winner = $player1;
+			}
+			$this->broker->publish(new Message('game.complete', ['winner' => $winner]));
 			$this->state['isComplete'] = true;
 		}
 	}

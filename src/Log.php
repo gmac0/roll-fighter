@@ -1,7 +1,10 @@
 <?php
+/*
+	Handles logging with option log level and log level filtering on output
+*/
 
 trait Log {
-	public static $priority = 2;
+	public static $priorityToLog = 2;
 
 	private $priorityMap = [
 		'debug' => 0,
@@ -20,7 +23,7 @@ trait Log {
 			$source = isset($call['class']) ? $call['class'] : basename($call['file']);
 			$traceStr .= "\n  {$type}{$source}::{$call['function']}()";
 		}
-		if ($this->priorityMap[$priority] >= self::$priority) {
+		if ($this->priorityMap[$priority] >= self::$priorityToLog) {
 			fwrite(STDERR, "$msg. Trace: $traceStr". PHP_EOL);
 		}
 	}

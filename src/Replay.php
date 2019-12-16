@@ -1,4 +1,7 @@
 <?php
+/*
+	Handles the game replay feature by capturing pub/sub messages and holding them in memory
+*/
 
 use PubSub\Subscriber;
 use PubSub\Message;

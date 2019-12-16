@@ -1,4 +1,7 @@
 <?php
+/*
+	Random number generator
+*/
 
 class Dice {
 	const SIDES = 6;

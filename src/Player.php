@@ -1,4 +1,8 @@
 <?php
+/*
+	Holds state of player in a fight, rolls for fight actions.
+	Also holds user options for interacting with the game (start, replay, etc.)
+*/
 
 use PubSub\Subscriber;
 use PubSub\Message;
@@ -15,6 +19,7 @@ class Player implements Subscriber {
 		'replay' => 'a',
 		'start' => 'b',
 		'roll' => 'c',
+		'auto-roll' => 'd',
 	];
 
 	const ACTION_ATTACK = 0;
@@ -27,12 +32,14 @@ class Player implements Subscriber {
 		$this->state = [
 			'attackPoints' => self::STARTING_ATTACK_POINTS,
 			'healthPoints' => self::STARTING_HEALTH_POINTS,
-			'lastOption' => null,
+			'chosenOption' => null,
 			'action' => null,
 			'inGame' => false,
+			'name' => '',
 		];
 		$this->broker = $broker;
 		$this->broker->subscribe('game.init', $this);
+		$this->broker->subscribe('game.roundOver', $this);
 		$this->broker->subscribe('game.over', $this);
 	}
 
@@ -42,14 +49,34 @@ class Player implements Subscriber {
 			case 'game.init':
 				$this->state['healthPoints'] = self::STARTING_HEALTH_POINTS;
 				break;
+			case 'game.roundOver':
+				if ($this->state['healthPoints'] <= 0) {
+					$this->broker->publish(new Message(
+						'player.outOfHealth',
+						['player' => $this]
+					));
+				}
+				break;
 			case 'game.over':
 				$this->state['inGame'] = false;
 				break;
 		}
 	}
 
+	public function setName($name) {
+		$this->state['name'] = $name;
+	}
+
+	public function getName() {
+		return $this->state['name'];
+	}
+
 	public function setInGame($inGame) {
 		$this->state['inGame'] = $inGame;
+	}
+
+	public function isInGame() {
+		return $this->state['inGame'];
 	}
 
 	public function getAvailableOptions() {
@@ -60,6 +87,7 @@ class Player implements Subscriber {
 			return $options;
 		} else {
 			unset($options['roll']);
+			unset($options['auto-roll']);
 			return $options;
 		}
 	}
@@ -68,11 +96,11 @@ class Player implements Subscriber {
 		if (!in_array($option, $this->getAvailableOptions())) {
 			throw new Exception("Unexpected option $option");
 		}
-		$this->state['lastOption'] = $option;
+		$this->state['chosenOption'] = $option;
 	}
 
 	public function getOption() : string {
-		return $this->state['lastOption'];
+		return $this->state['chosenOption'];
 	}
 
 	public function takeDamage($healthPoints) {
@@ -80,12 +108,6 @@ class Player implements Subscriber {
 			return;
 		}
 		$this->state['healthPoints'] -= $healthPoints;
-		if ($this->state['healthPoints'] <= 0) {
-			$this->broker->publish(new Message(
-				'player.outOfHealth',
-				['player' => $this]
-			));
-		}
 	}
 
 	public function getAttackPoints() {
