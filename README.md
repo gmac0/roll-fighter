@@ -10,7 +10,9 @@ Each player has a set amount of attack and health points. A game starts with bot
 To play the game run `php main.php` to start up the command line interface client and play against an AI. Your options are to:
 * a) replay your last game (must have played at least one game this session to do so)
 * b) start a new game
+
 Once in a game you can 
+
 * c) roll the dice on your turn
 * d) auto-roll the dice on all your turns until the game is over (in case rolling the dice over and over manually isn't your thing)
 
